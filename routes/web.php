@@ -7,9 +7,6 @@ use App\Http\Controllers\HomeController; // ---> tambahan
 
 // Halaman publik
 Route::get('/', [HomeController::class, 'index'])->name('home');
-// Route::get('/', function () {
-//     return view('home');
-// })->name('home');
 
 // Route survei
 Route::prefix('survey')->name('survey.')->group(function () {
@@ -79,6 +76,11 @@ Route::prefix('super-admin')->middleware(['auth', 'role:super_admin'])->name('su
         return App\Models\Unit::where('opd_id', $opdId)->get(['id', 'name']);
     })->name('units.by-opd');
     
+    // Laporan
+    Route::get('/reports', [App\Http\Controllers\Admin\SuperAdmin\ReportController::class, 'index'])->name('reports.index');
+    Route::get('/reports/export-excel', [App\Http\Controllers\Admin\SuperAdmin\ReportController::class, 'exportExcel'])->name('reports.export-excel');
+    Route::get('/reports/export-pdf', [App\Http\Controllers\Admin\SuperAdmin\ReportController::class, 'exportPdf'])->name('reports.export-pdf');
+    Route::get('/reports/export-ikm-pdf', [App\Http\Controllers\Admin\SuperAdmin\ReportController::class, 'exportIkmPdf'])->name('reports.export-ikm-pdf');
 });
 
 // ==================== ADMIN OPD ROUTES ====================
@@ -98,6 +100,12 @@ Route::prefix('admin-opd')->middleware(['auth', 'role:admin_opd'])->name('admin-
     Route::get('/reports', [App\Http\Controllers\Admin\AdminOpd\ReportController::class, 'index'])->name('reports.index');
     Route::get('/reports/export-excel', [App\Http\Controllers\Admin\AdminOpd\ReportController::class, 'exportExcel'])->name('reports.export-excel');
     Route::get('/reports/export-pdf', [App\Http\Controllers\Admin\AdminOpd\ReportController::class, 'exportPdf'])->name('reports.export-pdf');
+
+    // Laporan
+    Route::get('/reports', [App\Http\Controllers\Admin\AdminOpd\ReportController::class, 'index'])->name('reports.index');
+    Route::get('/reports/export-excel', [App\Http\Controllers\Admin\AdminOpd\ReportController::class, 'exportExcel'])->name('reports.export-excel');
+    Route::get('/reports/export-pdf', [App\Http\Controllers\Admin\AdminOpd\ReportController::class, 'exportPdf'])->name('reports.export-pdf');
+    Route::get('/reports/export-ikm-pdf', [App\Http\Controllers\Admin\AdminOpd\ReportController::class, 'exportIkmPdf'])->name('reports.export-ikm-pdf');
 });
 
 // ==================== PIMPINAN OPD ROUTES ====================
@@ -113,6 +121,12 @@ Route::prefix('pimpinan')->middleware(['auth', 'role:pimpinan_opd'])->name('pimp
     Route::get('/reports', [App\Http\Controllers\Pimpinan\ReportController::class, 'index'])->name('reports.index');
     Route::get('/reports/export-excel', [App\Http\Controllers\Pimpinan\ReportController::class, 'exportExcel'])->name('reports.export-excel');
     Route::get('/reports/export-pdf', [App\Http\Controllers\Pimpinan\ReportController::class, 'exportPdf'])->name('reports.export-pdf');
+
+    // Laporan
+    Route::get('/reports', [App\Http\Controllers\Pimpinan\ReportController::class, 'index'])->name('reports.index');
+    Route::get('/reports/export-excel', [App\Http\Controllers\Pimpinan\ReportController::class, 'exportExcel'])->name('reports.export-excel');
+    Route::get('/reports/export-pdf', [App\Http\Controllers\Pimpinan\ReportController::class, 'exportPdf'])->name('reports.export-pdf');
+    Route::get('/reports/export-ikm-pdf', [App\Http\Controllers\Pimpinan\ReportController::class, 'exportIkmPdf'])->name('reports.export-ikm-pdf');
 });
 
 // Profile routes (simple version)

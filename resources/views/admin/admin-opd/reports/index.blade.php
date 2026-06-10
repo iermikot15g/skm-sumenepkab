@@ -5,6 +5,19 @@
 
 @section('content')
 <div class="space-y-6">
+    <!-- Flash Messages -->
+    @if(session('success'))
+        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative">
+            {{ session('success') }}
+        </div>
+    @endif
+    
+    @if(session('error'))
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+            {{ session('error') }}
+        </div>
+    @endif
+    
     <!-- Filter Form -->
     <div class="bg-white rounded-lg shadow p-6">
         <h3 class="text-lg font-semibold text-gray-900 mb-4">Filter Laporan</h3>
@@ -46,6 +59,21 @@
                 </div>
             </div>
             
+            <!-- Filter Jenis Layanan (khusus Admin OPD) -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label for="service_name" class="block text-sm font-medium text-gray-700 mb-1">Jenis Layanan</label>
+                    <select name="service_name" id="service_name" class="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500">
+                        <option value="all" {{ ($serviceName ?? 'all') == 'all' ? 'selected' : '' }}>Semua Layanan</option>
+                        @foreach($services ?? [] as $service)
+                            <option value="{{ $service }}" {{ ($serviceName ?? '') == $service ? 'selected' : '' }}>
+                                {{ $service }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+            
             <div class="flex justify-between items-center pt-4">
                 <div class="space-x-2">
                     <button type="submit" class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-white hover:bg-green-700">
@@ -60,21 +88,32 @@
                     </a>
                 </div>
                 
-                <div class="space-x-2">
+                <div class="flex flex-wrap gap-2">
+                    <!-- Export Excel (Data Mentah) -->
                     <a href="{{ route('admin-opd.reports.export-excel', request()->query()) }}" 
                        class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-white hover:bg-green-700">
                         <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                         </svg>
-                        Export Excel
+                        Export Excel (Data Mentah)
                     </a>
                     
+                    <!-- Export PDF (Data Detail) -->
                     <a href="{{ route('admin-opd.reports.export-pdf', request()->query()) }}" 
                        class="inline-flex items-center px-4 py-2 bg-red-600 border border-transparent rounded-md font-semibold text-white hover:bg-red-700">
                         <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                         </svg>
-                        Export PDF
+                        Export PDF (Data Detail)
+                    </a>
+                    
+                    <!-- Export IKM PDF (Format Permen PANRB) -->
+                    <a href="{{ route('admin-opd.reports.export-ikm-pdf', request()->query()) }}" 
+                       class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-white hover:bg-blue-700">
+                        <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Export IKM PDF (Format Permen PANRB)
                     </a>
                 </div>
             </div>
@@ -190,6 +229,7 @@
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">NIK</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unit</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Jenis Layanan</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">IKM</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Aksi</th>
                     </tr>
@@ -206,6 +246,7 @@
                         <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $survey->full_name }}</td>
                         <td class="px-6 py-4 text-sm text-gray-500">{{ $survey->nik }}</td>
                         <td class="px-6 py-4 text-sm text-gray-500">{{ $survey->unit->name ?? '-' }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-500">{{ $survey->selected_service ?? '-' }}</td>
                         <td class="px-6 py-4">
                             <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full {{ $gradeClass }}">
                                 {{ number_format($ikm, 1) }}%
@@ -219,7 +260,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="6" class="px-6 py-8 text-center text-gray-500">
+                        <td colspan="7" class="px-6 py-8 text-center text-gray-500">
                             Tidak ada data survei dengan filter yang dipilih.
                         </td>
                     </tr>

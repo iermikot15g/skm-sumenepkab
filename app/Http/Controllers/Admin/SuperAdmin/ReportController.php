@@ -188,4 +188,73 @@ class ReportController extends Controller
         
         return $pdf->download('laporan-survei-' . now()->format('Y-m-d-His') . '.pdf');
     }
+
+    /**
+     * Export IKM Report PDF (Format Permen PANRB)
+     */
+    public function exportIkmPdf(Request $request)
+    {
+        $periodId = $request->get('period_id');
+        $opdId = $request->get('opd_id');
+        $unitId = $request->get('unit_id');
+        
+        // Base query
+        $query = Respondent::with(['unit.opd', 'period', 'answers']);
+        
+        if ($periodId) {
+            $query->where('period_id', $periodId);
+        }
+        
+        if ($opdId) {
+            $query->whereHas('unit', function($q) use ($opdId) {
+                $q->where('opd_id', $opdId);
+            });
+        }
+        
+        if ($unitId) {
+            $query->where('unit_id', $unitId);
+        }
+        
+        $respondents = $query->get();
+        
+        // Calculate IKM
+        $totalIkm = 0;
+        foreach ($respondents as $respondent) {
+            $avgScore = $respondent->answers->avg('score') ?? 0;
+            $totalIkm += ($avgScore / 4) * 100;
+        }
+        $averageIkm = $respondents->count() > 0 ? round($totalIkm / $respondents->count(), 2) : 0;
+        
+        // Demographics
+        $genderMale = $respondents->where('gender', 'male')->count();
+        $genderFemale = $respondents->where('gender', 'female')->count();
+        
+        $education = [
+            'sd' => $respondents->where('education', 'sd')->count(),
+            'smp' => $respondents->where('education', 'smp')->count(),
+            'sma' => $respondents->where('education', 'sma')->count(),
+            'd3' => $respondents->where('education', 'd3')->count(),
+            's1' => $respondents->where('education', 's1')->count(),
+            's2' => $respondents->where('education', 's2')->count(),
+        ];
+        
+        // Period info
+        $period = $periodId ? Period::find($periodId) : null;
+        $periodName = $period ? $period->name : 'Semua Periode';
+        $startDate = $period ? $period->start_date->format('d/m/Y') : '-';
+        $endDate = $period ? $period->end_date->format('d/m/Y') : '-';
+        
+        // Unit name for Super Admin
+        $unitName = 'PEMERINTAH KABUPATEN SUMENEP';
+        
+        $data = compact(
+            'respondents', 'averageIkm', 'genderMale', 'genderFemale',
+            'education', 'periodName', 'startDate', 'endDate', 'unitName'
+        );
+        
+        $pdf = Pdf::loadView('admin.super-admin.reports.ikm-pdf', $data);
+        $pdf->setPaper('A4', 'portrait');
+        
+        return $pdf->download('laporan-ikm-sumenep-' . now()->format('Y-m-d-His') . '.pdf');
+    }
 }

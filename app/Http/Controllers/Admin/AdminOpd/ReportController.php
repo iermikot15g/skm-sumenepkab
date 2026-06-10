@@ -221,4 +221,81 @@ class ReportController extends Controller
         
         return $pdf->download('laporan-opd-' . $opd->short_name . '-' . now()->format('Y-m-d-His') . '.pdf');
     }
+
+    /**
+     * Export IKM Report PDF (Format Permen PANRB) for Admin OPD
+     */
+    public function exportIkmPdf(Request $request)
+    {
+        $user = Auth::user();
+        $opdId = $user->opd_id;
+        $opd = $user->opd;
+        $unitIds = Unit::where('opd_id', $opdId)->pluck('id')->toArray();
+        
+        $periodId = $request->get('period_id');
+        $unitId = $request->get('unit_id');
+        $serviceName = $request->get('service_name');
+        
+        // Base query
+        $query = Respondent::whereIn('unit_id', $unitIds)
+            ->with(['unit', 'period', 'answers']);
+        
+        if ($periodId) {
+            $query->where('period_id', $periodId);
+        }
+        
+        if ($unitId) {
+            $query->where('unit_id', $unitId);
+        }
+        
+        if ($serviceName && $serviceName !== 'all') {
+            $query->where('selected_service', $serviceName);
+        }
+        
+        $respondents = $query->get();
+        
+        // Calculate IKM
+        $totalIkm = 0;
+        foreach ($respondents as $respondent) {
+            $avgScore = $respondent->answers->avg('score') ?? 0;
+            $totalIkm += ($avgScore / 4) * 100;
+        }
+        $averageIkm = $respondents->count() > 0 ? round($totalIkm / $respondents->count(), 2) : 0;
+        
+        // Demographics
+        $genderMale = $respondents->where('gender', 'male')->count();
+        $genderFemale = $respondents->where('gender', 'female')->count();
+        
+        $education = [
+            'sd' => $respondents->where('education', 'sd')->count(),
+            'smp' => $respondents->where('education', 'smp')->count(),
+            'sma' => $respondents->where('education', 'sma')->count(),
+            'd3' => $respondents->where('education', 'd3')->count(),
+            's1' => $respondents->where('education', 's1')->count(),
+            's2' => $respondents->where('education', 's2')->count(),
+        ];
+        
+        // Period info
+        $period = $periodId ? Period::find($periodId) : null;
+        $periodName = $period ? $period->name : 'Semua Periode';
+        $startDate = $period ? $period->start_date->format('d/m/Y') : '-';
+        $endDate = $period ? $period->end_date->format('d/m/Y') : '-';
+        
+        // Get available services for filter
+        $services = $respondents->pluck('selected_service')->unique()->values()->toArray();
+        
+        $selectedService = ($serviceName && $serviceName !== 'all') ? $serviceName : 'Semua Layanan';
+        
+        $data = compact(
+            'opd', 'respondents', 'averageIkm', 'genderMale', 'genderFemale',
+            'education', 'periodName', 'startDate', 'endDate', 'services',
+            'selectedService', 'periodId', 'unitId', 'serviceName'
+        );
+        
+        $pdf = Pdf::loadView('admin.admin-opd.reports.ikm-pdf', $data);
+        $pdf->setPaper('A4', 'portrait');
+        
+        $fileName = 'laporan-ikm-' . $opd->short_name . '-' . now()->format('Y-m-d-His') . '.pdf';
+        return $pdf->download($fileName);
+    }
 }
