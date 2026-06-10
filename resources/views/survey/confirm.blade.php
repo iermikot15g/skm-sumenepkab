@@ -179,11 +179,3 @@
 </div>
 @endsection
 
-<!-- DEBUG: Tampilkan data answers (hapus setelah testing) -->
-@php
-    $debugAnswers = Session::get('survey.answers', []);
-@endphp
-<div class="mb-4 bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-xs">
-    <p class="font-mono">Debug - Data Answers dari Session:</p>
-    <pre class="mt-1">{{ json_encode($debugAnswers, JSON_PRETTY_PRINT) }}</pre>
-</div>

@@ -6,13 +6,6 @@
 @section('content')
 <div class="max-w-2xl mx-auto text-center">
     
-    <!-- Flash Message -->
-    @if(session('success'))
-        <div class="mb-6 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative">
-            {{ session('success') }}
-        </div>
-    @endif
-    
     <!-- Icon Sukses -->
     <div class="mb-6">
         <div class="mx-auto flex items-center justify-center h-24 w-24 rounded-full bg-green-100">
@@ -52,12 +45,6 @@
                 </a>
             </div>
         </div>
-    </div>
-    
-    <!-- Footer Info -->
-    <div class="mt-6 text-center text-xs text-gray-500">
-        <p>© {{ date('Y') }} Pemerintah Kabupaten Sumenep</p>
-        <p class="mt-1">Sistem Informasi Survei Kepuasan Masyarakat Berbasis Permen PANRB No. 14 Tahun 2017</p>
-    </div>
+    </div>    
 </div>
 @endsection

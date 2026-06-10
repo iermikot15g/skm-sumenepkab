@@ -3,11 +3,13 @@
 use App\Http\Controllers\SurveyController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\HomeController; // ---> tambahan
 
 // Halaman publik
-Route::get('/', function () {
-    return view('home');
-})->name('home');
+Route::get('/', [HomeController::class, 'index'])->name('home');
+// Route::get('/', function () {
+//     return view('home');
+// })->name('home');
 
 // Route survei
 Route::prefix('survey')->name('survey.')->group(function () {
