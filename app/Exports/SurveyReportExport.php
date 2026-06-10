@@ -1,0 +1,133 @@
+<?php
+
+namespace App\Exports;
+
+use App\Models\Respondent;
+use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\WithHeadings;
+use Maatwebsite\Excel\Concerns\WithMapping;
+use Maatwebsite\Excel\Concerns\WithStyles;
+use Maatwebsite\Excel\Concerns\ShouldAutoSize;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+
+class SurveyReportExport implements FromCollection, WithHeadings, WithMapping, WithStyles, ShouldAutoSize
+{
+    protected $filters;
+    
+    public function __construct($filters)
+    {
+        $this->filters = $filters;
+    }
+    
+    public function collection()
+    {
+        $query = Respondent::with(['unit.opd', 'period', 'answers']);
+        
+        if ($this->filters['period_id']) {
+            $query->where('period_id', $this->filters['period_id']);
+        }
+        
+        if ($this->filters['opd_id']) {
+            $query->whereHas('unit', function($q) {
+                $q->where('opd_id', $this->filters['opd_id']);
+            });
+        }
+        
+        if ($this->filters['unit_id']) {
+            $query->where('unit_id', $this->filters['unit_id']);
+        }
+        
+        if ($this->filters['date_from']) {
+            $query->whereDate('created_at', '>=', $this->filters['date_from']);
+        }
+        
+        if ($this->filters['date_to']) {
+            $query->whereDate('created_at', '<=', $this->filters['date_to']);
+        }
+        
+        return $query->get();
+    }
+    
+    public function headings(): array
+    {
+        return [
+            'No',
+            'Tanggal Survei',
+            'NIK',
+            'Nama Lengkap',
+            'No HP',
+            'Unit Layanan',
+            'OPD',
+            'Periode',
+            'Q1 - Persyaratan',
+            'Q2 - Prosedur',
+            'Q3 - Kecepatan',
+            'Q4 - Biaya',
+            'Q5 - Hasil',
+            'Q6 - Kompetensi',
+            'Q7 - Kesopanan',
+            'Q8 - Sarana',
+            'Q9 - Pengaduan',
+            'Rata-rata Skor',
+            'IKM (%)',
+            'Mutu',
+        ];
+    }
+    
+    public function map($respondent): array
+    {
+        static $rowNumber = 0;
+        $rowNumber++;
+        
+        $answers = [];
+        for ($i = 1; $i <= 9; $i++) {
+            $answer = $respondent->answers->firstWhere('question_number', $i);
+            $answers[] = $answer ? $answer->score : '-';
+        }
+        
+        $avgScore = $respondent->answers->avg('score') ?? 0;
+        $ikm = ($avgScore / 4) * 100;
+        
+        // Determine quality grade
+        if ($ikm >= 88.31) {
+            $mutu = 'A (Sangat Baik)';
+        } elseif ($ikm >= 76.61) {
+            $mutu = 'B (Baik)';
+        } elseif ($ikm >= 65.00) {
+            $mutu = 'C (Kurang Baik)';
+        } else {
+            $mutu = 'D (Tidak Baik)';
+        }
+        
+        return [
+            $rowNumber,
+            $respondent->created_at->format('d/m/Y H:i'),
+            $respondent->nik,
+            $respondent->full_name,
+            $respondent->phone,
+            $respondent->unit->name ?? '-',
+            $respondent->unit->opd->short_name ?? '-',
+            $respondent->period->name ?? '-',
+            $answers[0],
+            $answers[1],
+            $answers[2],
+            $answers[3],
+            $answers[4],
+            $answers[5],
+            $answers[6],
+            $answers[7],
+            $answers[8],
+            number_format($avgScore, 2),
+            number_format($ikm, 2),
+            $mutu,
+        ];
+    }
+    
+    public function styles(Worksheet $sheet)
+    {
+        return [
+            1 => ['font' => ['bold' => true, 'size' => 12]],
+            'A1:T1' => ['fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => '22C55E']]],
+        ];
+    }
+}
